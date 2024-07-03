@@ -1,7 +1,16 @@
 <script>
-  let todoList = ["Go Shopping"];
+  import { db } from "../../lib/firebase/firebase";
+  import { authHandlers, authStore } from "../../store/store";
+  import { getDoc, doc, setDoc } from "firebase/firestore";
+  import TodoItem from "../../components/TodoItem.svelte";
+
+  let todoList = [];
   let currTodo = "";
   let error = false;
+
+  authStore.subscribe((curr) => {
+    todoList = curr.data.todos;
+  });
 
   function addTodo() {
     error = false;
@@ -28,59 +37,54 @@
     });
     todoList = newTodoList;
   }
+  async function saveTodos() {
+    try {
+      console.log("saved");
+      const userRef = doc(db, "users", $authStore.user.uid);
+      await setDoc(
+        userRef,
+        {
+          todos: todoList,
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.log("There was an error saving your information", err);
+    }
+  }
 </script>
 
-<div class="mainContainer">
-  <div class="headerContainer">
-    <h1>Todo List</h1>
-    <div class="headerBtns">
-      <button
-        ><i class="fa-regular fa-floppy-disk"></i>
-        <p>Save</p></button
-      >
-      <button
-        ><i class="fa-solid fa-arrow-right-from-bracket"></i>
-        <p>Logout</p></button
-      >
+{#if !$authStore.loading}
+  <div class="mainContainer">
+    <div class="headerContainer">
+      <h1>Todo List</h1>
+      <div class="headerBtns">
+        <button on:click={saveTodos}
+          ><i class="fa-regular fa-floppy-disk"></i>
+          <p>Save</p></button
+        >
+        <button on:click={authHandlers.logout}
+          ><i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <p>Logout</p></button
+        >
+      </div>
+    </div>
+
+    <main>
+      {#if todoList.length === 0}
+        <p>You have nothing to do!</p>
+      {/if}
+      {#each todoList as todo, index}
+        <TodoItem {todo} {index} {removeTodo} {editTodo} />
+      {/each}
+    </main>
+
+    <div class={error ? "errorBorder enterTodo" : "enterTodo"}>
+      <input bind:value={currTodo} type="text" placeholder="Enter Todo" />
+      <button on:click={addTodo}>Add</button>
     </div>
   </div>
-
-  <main>
-    {#if todoList.length === 0}
-      <p class="nothingToDO">You have nothing to do!</p>
-    {/if}
-    {#each todoList as todo, index}
-      <div class="todo">
-        <p>
-          {index + 1}.{todo}
-        </p>
-        <div class="actions">
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <i
-            on:click={() => {
-              editTodo(index);
-            }}
-            on:keydown={() => {}}
-            class="fa-regular fa-pen-to-square"
-          ></i>
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <i
-            on:click={() => {
-              removeTodo(index);
-            }}
-            on:keydown={() => {}}
-            class="fa-regular fa-trash-can"
-          ></i>
-        </div>
-      </div>
-    {/each}
-  </main>
-
-  <div class={error ? "errorBorder enterTodo" : "enterTodo"}>
-    <input bind:value={currTodo} type="text" placeholder="Enter Todo" />
-    <button on:click={addTodo}>Add</button>
-  </div>
-</div>
+{/if}
 
 <style>
   .mainContainer {

@@ -17,12 +17,13 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let firebaseApp;
-if(!getApps().length) {
-    firebaseApp = initializeApp(firebaseApp)
+if (!getApps().length) {
+    firebaseApp = initializeApp(firebaseConfig)
 } else {
     firebaseApp = getApp()
     deleteApp(firebaseApp)
-    firebaseApp = initializeApp(firebaseApp)
+    firebaseApp = initializeApp(firebaseConfig)
 }
+
 export const db = getFirestore(firebaseApp)
 export const auth = getAuth(firebaseApp)
